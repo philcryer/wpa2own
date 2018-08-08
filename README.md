@@ -36,7 +36,7 @@ EXAMPLE: to install all software requirements in Kali Linux:
 
 __TODO: include package list for other Linux distros. LMK if you figure any out!__
 
-* Tools that the script will download and build
+### Tools that the script will download and build
 
 - hcxdumptool (v4.2.0+)
 - hcxtools (v4.2.0+)
@@ -45,9 +45,9 @@ __TODO: include package list for other Linux distros. LMK if you figure any out!
 ## Gotchas
 
 1) You need a networking card that supports monitor mode under Linux
-2) While the script can use `hashcat-legacy`, that code is over 3 years old, and relies on your CPU to crack passwords. To really get the ball rolling you can use `hashcat` with the OpenCL headers (we pull those down as part of the build), and then run it with a compatible GPU.
+2) While the script can use `hashcat-legacy`, that code is over 3 years old, and relies on your CPU to crack passwords. To really get the ball rolling you can should use `hashcat` with the OpenCL headers (we pull those down as part of the build), but that requires a compatible GPU.
 
-__TODO: give examples of how this works__
+__TODO: give examples of how this works, with specfic drivers__
 
 ## Usage
 

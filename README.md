@@ -8,7 +8,7 @@
 <div align="center"><img src="tweet.png" alt="The announcement tweet"></div>
 - using that info, and other ideas fleshed out from [The Hacker News](https://thehackernews.com/2018/08/how-to-hack-wifi-password.html) how-to post, the genesis for this project started
 - on 2018-08-08 in Las Vegas, the day before [DEF CON](https://defcon.org) 26, I started building this using [Kali Linux](https://www.kali.org/) Rolling release (4.17.0-kali1-amd64 #1 SMP Debian 4.17.8-1kali1 (2018-07-24) x86_64 GNU/Linux) for development and testing
-- now that I'm working on it more, I see a bunch more posts with some more details [A New Method Discovered to Crack WPA/WPA2 PSK Enabled WiFi Network Passwords](https://gbhackers.com/crack-wifi-network-passwords/), [New attack on WPA/WPA2 using PMKID](https://medium.com/@adam.toscher/new-attack-on-wpa-wpa2-using-pmkid-96c3119f7f99)
+- now that I'm working on it more, I see a many more posts about this method. The original how-to, [How to Hack WiFi Password Easily Using New Attack On WPA/WPA2](https://thehackernews.com/2018/08/how-to-hack-wifi-password.html), and others I'm finding, [A New Method Discovered to Crack WPA/WPA2 PSK Enabled WiFi Network Passwords](https://gbhackers.com/crack-wifi-network-passwords/), [New attack on WPA/WPA2 using PMKID](https://medium.com/@adam.toscher/new-attack-on-wpa-wpa2-using-pmkid-96c3119f7f99)
 
 ## Requirements
 

@@ -44,7 +44,25 @@ __TODO: include package list for other Linux distros. LMK if you figure any out!
 
 ## Gotchas
 
-1) You need a networking card that supports monitor mode under Linux
+* You need a networking card that supports monitor mode under Linux, posts have listed the following:
+
+```
+Supported adapters (strict)
+
+USB ID 148f:7601 Ralink Technology, Corp. MT7601U Wireless Adapter
+USB ID 148f:3070 Ralink Technology, Corp. RT2870/RT3070 Wireless Adapter
+USB ID 148f:5370 Ralink Technology, Corp. RT5370 Wireless Adapter
+USB ID 0bda:8187 Realtek Semiconductor Corp. RTL8187 Wireless Adapter
+USB ID 0bda:8189 Realtek Semiconductor Corp. RTL8187B Wireless 802.11g 54Mbps Network Adapter
+```
+
+For my development and testing, I used a [Ralink RT5370](https://www.amazon.com/Ralink-RT5370-Raspberry-adapter-function/dp/B019XUDHFC):
+
+```
+$ lsusb | grep Ralink
+Bus 001 Device 039: ID 148f:5370 Ralink Technology, Corp. RT5370 Wireless Adapter
+```
+
 2) While the script can use `hashcat-legacy`, that code is over 3 years old, and relies on your CPU to crack passwords. To really get the ball rolling you can should use `hashcat` with the OpenCL headers (we pull those down as part of the build), but that requires a compatible GPU.
 
 __TODO: give examples of how this works, with specfic drivers__

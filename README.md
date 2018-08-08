@@ -1,5 +1,4 @@
 # wpa2own
-
 <div align="center"><img src="img/logo.jpg" alt="SHALL WE PLAY A GAME?"></div>
 
 ## About
@@ -16,7 +15,8 @@
 ### Hardware
 
 - GNU/Linux (64 bit)
-- a network card that supports montior mode (see [Gotchas](#gotchas))
+- a network card that supports montior mode - see [Gotchas](#gotchas)
+- a GPU (graphics processing unit) (optional, but recommended) - again, see [Gotchas](#gotchas)
 
 ### System utilities
 

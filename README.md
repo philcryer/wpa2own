@@ -6,8 +6,7 @@
 
 - on 2018-08-07 a [New attack on WPA/WPA2 using PMKID](https://hashcat.net/forum/thread-7717.html) announcment was made on the Hashcat site. The tweet linking to it:
 
-<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">We&#39;ve developed a new attack on WPA/WPA2. There&#39;s no more complete 4-way handshake recording required. Here&#39;s all details and tools you need: <a href="https://t.co/3f5eDXJLAe">https://t.co/3f5eDXJLAe</a> <a href="https://t.co/7bDuc4KH3v">pic.twitter.com/7bDuc4KH3v</a></p>&mdash; hashcat (@hashcat) <a href="https://twitter.com/hashcat/status/1025786562666213377?ref_src=twsrc%5Etfw">August 4, 2018</a></blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<div align="center"><img src="tweet.png" alt="The announcement tweet"></div>
 
 - using that info, and other ideas fleshed out from [The Hacker News](https://thehackernews.com/2018/08/how-to-hack-wifi-password.html) how-to post, the genesis for this project started
 - on 2018-08-08 in Las Vegas, the day before [DEF CON](https://defcon.org) 26, I started building this using [Kali Linux](https://www.kali.org/) Rolling release (4.17.0-kali1-amd64 #1 SMP Debian 4.17.8-1kali1 (2018-07-24) x86_64 GNU/Linux) for development and testing

@@ -1,6 +1,6 @@
 # wpa2own
 
-<div align="center"><img src="logo" alt="SHALL WE PLAY A GAME?"></div>
+<div align="center"><img src="logo.jpg" alt="SHALL WE PLAY A GAME?"></div>
 
 ## About
 

@@ -59,6 +59,20 @@ if [ ! -f "bin/hcxdumptool" ]; then
 	cd ../..
 fi
 
+if [ ! -f "bin/hashcat-legacy" ]; then
+	cd src
+	if [ ! -d "hashcat-legacy" ]; then
+		git clone https://github.com/hashcat/hashcat-legacy.git
+	fi
+	cd hashcat-legacy
+#	sudo ./tools/deps.sh
+	make linux64
+	mv hashcat-cli64.bin ../../bin/hashcat-legacy
+	cd ../..
+fi
+
+exit 0
+
 if [ ! -f "bin/hashcat" ]; then
 	cd src
 	if [ ! -d "hashcat" ]; then

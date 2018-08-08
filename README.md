@@ -58,7 +58,7 @@ After resolving the requirements and understanding the gotchas:
 
 ## License
 
-* [MIT License](blob/master/LICENSE)
+* [MIT License](LICENSE)
 
 ## Disclaimer
 

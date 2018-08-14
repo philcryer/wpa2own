@@ -5,7 +5,8 @@
 set -e
 
 # variables
-#pcap_max_size=$()
+# package capture file maximum size (in megabytes)
+pcap_max_size="10"
 timestamp=$(date +%s)
 this_arch=$(arch)
 this_uname=$(uname)
@@ -59,6 +60,7 @@ function rainbowsh_prompt(){
 	prompt_startstatus=$(echogreen "run")
 	prompt_errorstatus=$(echored "!!!")
 	prompt_endstatus=$(echogreen "end")
+	prompt_okstatus=$(echogreen "ok")
         
 	prompt_start="$prompt_open $prompt_startstatus $prompt_close"
 	prompt_verb="$prompt_open $prompt_action $prompt_close"
@@ -67,22 +69,71 @@ function rainbowsh_prompt(){
 	prompt_end="$prompt_open $prompt_endstatus $prompt_close"
 }
 
+function wpa2own_logo(){
+cat << "EOF"
+                      ____
+__      ___ __   __ _|___ \ _____      ___ __
+\ \ /\ / | '_ \ / _` | __) / _ \ \ /\ / | '_ \ 
+ \ V  V /| |_) | (_| |/ __| (_) \ V  V /| | | |
+  \_/\_/ | .__/ \__,_|_____\___/ \_/\_/ |_| |_|
+EOF
+echo "  v`cat VERSION` |_|  `shuf -n 1 txt/slogans`"
+#echo "         |_|  `shuf -n 1 txt/slogans`"
+}
+
+wpa2own_preflight(){
+	if [ $this_uname != "Linux" ]; then
+		echo "failed";echo "$prompt_error" "  Error: this script only supports Linux"
+		echo "$prompt_end"
+		exit 1
+	else
+		echo "$this_uname $prompt_okstatus"
+	fi
+	echo -n "$prompt_adj" "  Arch: "
+	if [ $this_arch != "x86_64" ]; then
+		echo "failed";echo "$prompt_error" "  Error: this script only supports a 64bit (x86_64) architecture"
+		echo "$prompt_end"
+		exit 1
+	else
+		echo "$this_arch $prompt_okstatus"
+	fi
+
+    # check for required cli tools
+    for cli in git curl make bash sudo shuf; do
+	if type "$cli" > /dev/null 2>&1; then
+		echo -n "$prompt_adj" "  Apps: $cli "
+		echo "$prompt_okstatus"
+	fi	
+
+        if ! type "$cli" > /dev/null 2>&1; then
+	    echo "failed";echo "$prompt_error" "  Error: $cli not installed or in the PATH. Aborting." 
+            exit 1
+        fi
+    done
+}
 
 function stage1-config(){
-	echo "$prompt_adj" "  - verifying base directories"
+	echo -n "$prompt_adj" "  Directory: bin "
 	if [ ! -d "bin" ]; then mkdir bin; fi
+	echo "$prompt_okstatus"
+	echo -n "$prompt_adj" "  Directory: out "
 	if [ ! -d "out" ]; then mkdir out; fi
+	echo "$prompt_okstatus "
+	echo -n "$prompt_adj" "  Directory: src "
 	if [ ! -d "src" ]; then mkdir src; fi
+	echo "$prompt_okstatus"
 
-	echo "$prompt_adj" "  - verifying needed software"
+	echo -n "$prompt_adj" "  Software: hcxdumptool "
 	if [ ! -f "bin/hcxdumptool" ]; then
-		echo "$prompt_adj" "      installing hcxdumptool"
+		echo
 		cd src
-		curl -L https://github.com/ZerBea/hcxdumptool/archive/4.2.1.tar.gz | tar zx 
+		curl -s -L https://github.com/ZerBea/hcxdumptool/archive/4.2.1.tar.gz | tar zx 
 		cd hcxdumptool-*
 		make
 		mv hcxdumptool ../../bin/
 		cd ../..
+        else
+		echo "$prompt_okstatus"
 	fi
 
 	#if [ ! -f "bin/hashcat-legacy" ]; then
@@ -98,8 +149,9 @@ function stage1-config(){
 	#	cd ../..
 	#fi
 
+	echo -n "$prompt_adj" "  Software: hashcat "
 	if [ ! -f "bin/hashcat" ]; then
-		echo "$prompt_adj" "      installing hashcat"
+		echo
 		cd src
 		if [ ! -d "hashcat" ]; then
 			git clone https://github.com/hashcat/hashcat.git
@@ -109,18 +161,25 @@ function stage1-config(){
 		make
 		mv hashcat ../../bin/
 		cd ../..
+        else
+		echo "$prompt_okstatus"
 	fi
 
+	echo -n "$prompt_adj" "  Software: hcxpcaptool "
 	if [ ! -f "bin/hcxpcaptool" ]; then
-		echo "$prompt_adj" "      installing hcxpcaptool"
+		echo
 		cd src
-		curl -L https://github.com/ZerBea/hcxtools/archive/4.2.1.tar.gz | tar zx 
+		curl -s -L https://github.com/ZerBea/hcxtools/archive/4.2.1.tar.gz | tar zx 
 		cd hcxtools-*
 		make
  		mv hcxpcaptool hcxhashcattool wlanhc2hcx wlanwkp2hcx wlanhcxinfo wlanhcx2cap wlanhcx2essid wlanhcx2ssid wlanhcxmnc wlanhashhcx wlanhcxcat wlanpmk2hcx wlanjohn2hcx wlancow2hcxpmk whoismac wlanhcx2john wlanhcx2psk wlancap2wpasec ../../bin
 		cd ../..
+        else
+		echo "$prompt_okstatus"
 	fi
+	echo -n "$prompt_adj" "  Software: making all binaries executeable"
 	chmod a+x bin/*
+	echo "$prompt_okstatus"
 }
 
 function stage2-capture(){
@@ -159,37 +218,27 @@ function stage3-crack(){
 	echo "$prompt_adj" "  - then run: ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'"
 }
 
-
-# Run output prompt functions
+# Run the program
+clear
+wpa2own_logo
 rainbowsh
 rainbowsh_prompt
-echo "$prompt_start"
 
-echo "$prompt_verb" "System check"
+echo;echo "$prompt_start"
+echo "$prompt_verb" "Stage 0"
+echo -n "$prompt_adj" "  System: "
 
-if [ $this_uname != "Linux" ]; then
-	echo "$prompt_error" "  Error: this script only supports Linux"
-	echo "$prompt_end"
-	exit 1
-else
-	echo "$prompt_adj" "  $this_uname: supported"
+wpa2own_preflight
 
-fi
-
-if [ $this_arch != "x86_64" ]; then
-	echo "$prompt_error" "  Error: this script only supports 64bit (x86_64) Linux"
-	echo "$prompt_end"
-	exit 1
-else
-	echo "$prompt_adj" "  $this_arch: supported"
-fi
-
-echo "$prompt_verb" "Stage 1/3"
+echo "$prompt_verb" "Stage 1"
 stage1-config
-echo "$prompt_verb" "Stage 2/3"
+
+echo "$prompt_verb" "Stage 2"
 stage2-capture
-echo "$prompt_verb" "Stage 3/3"
+
+echo "$prompt_verb" "Stage 3"
 stage3-crack
+
 echo "$prompt_end"
 
 exit 0

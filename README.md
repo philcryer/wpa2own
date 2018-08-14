@@ -79,7 +79,7 @@ After resolving the requirements and understanding the gotchas:
 ./wpa2own
 ```
 
-__NOTICE: currently once the scan is complete, your output file in the `out/` dir will be ready to run against `hashcat`. I'm working to get this bit automated so it will `scp` the file to a GPU enabled rig, run it there and give you the results. This is a WIP, hoping to have this going by next weke (today is 8/14/2018)__
+__NOTICE (8/14/2018) currently, once the scan is complete, your output file is saved in the `out/` dir, ready to run against `hashcat` on a system with GPU processors. I'm working to get this bit automated so it will `scp` the file to a GPU enabled rig, run it there and give you the results. This is a WIP, working to have complete by next week__
 
 ## License
 

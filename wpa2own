@@ -4,9 +4,10 @@
 
 set -e
 
-# variables
-# package capture file maximum size (in megabytes)
+#### variables
+# package capture file maximum size in megabytes (salt to taste)
 pcap_max_size="10"
+# no need to modify the following variables
 timestamp=$(date +%s)
 this_arch=$(arch)
 this_uname=$(uname)
@@ -71,14 +72,13 @@ function rainbowsh_prompt(){
 
 function wpa2own_logo(){
 cat << "EOF"
-                      ____
-__      ___ __   __ _|___ \ _____      ___ __
-\ \ /\ / | '_ \ / _` | __) / _ \ \ /\ / | '_ \ 
- \ V  V /| |_) | (_| |/ __| (_) \ V  V /| | | |
-  \_/\_/ | .__/ \__,_|_____\___/ \_/\_/ |_| |_|
+                       ____
+ __      ___ __   __ _|___ \ _____      ___ __
+ \ \ /\ / | '_ \ / _` | __) / _ \ \ /\ / | '_ \ 
+  \ V  V /| |_) | (_| |/ __| (_) \ V  V /| | | |
+   \_/\_/ | .__/ \__,_|_____\___/ \_/\_/ |_| |_|
 EOF
-echo "  v`cat VERSION` |_|  `shuf -n 1 txt/slogans`"
-#echo "         |_|  `shuf -n 1 txt/slogans`"
+echo "   v`cat VERSION` |_|  `shuf -n 1 txt/slogans`"
 }
 
 wpa2own_preflight(){
@@ -220,9 +220,9 @@ function stage3-crack(){
 
 # Run the program
 clear
-wpa2own_logo
 rainbowsh
 rainbowsh_prompt
+wpa2own_logo
 
 echo;echo "$prompt_start"
 echo "$prompt_verb" "Stage 0"

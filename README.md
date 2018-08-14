@@ -60,7 +60,7 @@ USB ID 0bda:8187 Realtek Semiconductor Corp. RTL8187 Wireless Adapter
 USB ID 0bda:8189 Realtek Semiconductor Corp. RTL8187B Wireless 802.11g 54Mbps Network Adapter
 ```
 
-For my development and testing, I used a [Ralink RT5370](https://www.amazon.com/Ralink-RT5370-Raspberry-adapter-function/dp/B019XUDHFC):
+For development and testing, I used the [Ralink RT5370](https://www.amazon.com/Ralink-RT5370-Raspberry-adapter-function/dp/B019XUDHFC) USB wireless:
 
 ```
 $ lsusb | grep Ralink
@@ -78,6 +78,8 @@ After resolving the requirements and understanding the gotchas:
 ```
 ./wpa2own
 ```
+
+__NOTICE: currently once the scan is complete, your output file in the `out/` dir will be ready to run against `hashcat`. I'm working to get this bit automated so it will `scp` the file to a GPU enabled rig, run it there and give you the results. This is a WIP, hoping to have this going by next weke (today is 8/14/2018)__
 
 ## License
 

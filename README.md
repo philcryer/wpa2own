@@ -35,7 +35,7 @@
 - libcurl and curl-dev installed (used by whoismac and wlancap2wpasec)
 - libpthread and pthread-dev installed (used by hcxhashcattool)
        
-EXAMPLE: to install all software requirements in Kali Linux: 
+EXAMPLE: to install all software requirements in Debian Linux, Ubuntu Linux, and Kali Linux: 
 
 ```sudo apt-get -y install libcurl4-openssl-dev libssl-dev zlib1g-dev libpcap-dev libgmp3-dev```
 
@@ -80,7 +80,7 @@ After resolving the requirements and understanding the gotchas:
 ./wpa2own
 ```
 
-__NOTICE (8/14/2018) currently, once the scan is complete, your output file is saved in the `out/` dir, ready to run against `hashcat` on a system with GPU processors. I'm working to get this bit automated so it will `scp` the file to a GPU enabled rig, run it there and give you the results. This is a WIP, working to have complete by next week__
+__NOTICE (8/14/2018) currently, once the scan is complete, your output file is saved in the `out/` dir, ready to run against `hashcat` on a system with GPU processors. I'm working to get this bit automated so it will `scp` the file to a GPU enabled rig, run it there and give you the results. This is a WIP, working to have complete by next week!__
 
 ## License
 

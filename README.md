@@ -20,11 +20,12 @@
 
 ### System utilities
 
-- git
-- curl
-- make
 - bash
-- sudo (or you could run this as root :\ )
+- curl
+- git
+- make
+- rsync
+- sudo 
 
 ### Packages needed to build hcxtools 
   

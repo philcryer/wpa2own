@@ -36,7 +36,7 @@
        
 EXAMPLE: to install all software requirements in Kali Linux: 
 
-```apt-get install libcurl4-openssl-dev libssl-dev zlib1g-dev libpcap-dev)```
+```sudo apt-get -y install libcurl4-openssl-dev libssl-dev zlib1g-dev libpcap-dev libgmp3-dev```
 
 __TODO: include package list for other Linux distros. LMK if you figure any out!__
 

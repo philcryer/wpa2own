@@ -3,20 +3,23 @@
 
 ## About
 
-* on 2018-08-07 a [New attack on WPA/WPA2 using PMKID](https://hashcat.net/forum/thread-7717.html) announcment was made on the Hashcat site. The tweet linking to it:
+The goal of this project is to assist penetration testers in capturing packets from a WPA2 protected wireless network, and crack their PSK (pre-shared key). We know that WPA3 is coming, but most didn't know that WPA2 was as susceptible to being broken as it is.
+
+### History
+
+* on August 4, 2018 there was an announcement on the Hashcat forum of a [New attack on WPA/WPA2 using PMKID](https://hashcat.net/forum/thread-7717.html) The tweet linking to it:
 <div align="center"><img src="img/tweet.png" alt="The announcement tweet"></div>
 
 * using that info, and other ideas fleshed out from [The Hacker News](https://thehackernews.com/2018/08/how-to-hack-wifi-password.html) how-to post, the genesis for this project started
-* on 2018-08-08 in Las Vegas, the day before [DEF CON](https://defcon.org) 26, I started building this using [Kali Linux](https://www.kali.org/) Rolling release (4.17.0-kali1-amd64 #1 SMP Debian 4.17.8-1kali1 (2018-07-24) x86_64 GNU/Linux) for development and testing
+* on August 8, 2018 in Las Vegas, the day before [DEF CON](https://defcon.org) 26, I started building this using [Kali Linux](https://www.kali.org/) Rolling release (4.17.0-kali1-amd64 #1 SMP Debian 4.17.8-1kali1 (2018-07-24) x86_64 GNU/Linux) for development and testing
 * now that I'm working on it more, I see a many more posts about this method. The original how-to, [How to Hack WiFi Password Easily Using New Attack On WPA/WPA2](https://thehackernews.com/2018/08/how-to-hack-wifi-password.html), and others I'm finding, [A New Method Discovered to Crack WPA/WPA2 PSK Enabled WiFi Network Passwords](https://gbhackers.com/crack-wifi-network-passwords/), [New attack on WPA/WPA2 using PMKID](https://medium.com/@adam.toscher/new-attack-on-wpa-wpa2-using-pmkid-96c3119f7f99)
 
 ## Requirements
 
 ### Hardware
 
-- a GNU/Linux (64 bit) based computer
-- a network card that supports montior mode - see [Gotchas](#gotchas)
-- a GPU (graphics processing unit) (optional, but recommended) - again, see [Gotchas](#gotchas)
+- a 64 bit Linux system with a network card that supports montior mode - see [Gotchas](#gotchas)
+- a 64 bit Linux system with a GPU (graphics processing unit) for running Hashcat against the pcap - again, see [Gotchas](#gotchas). In this example we're assuming this is a seperate machine, but in the case that you have both on one system, we could rework things to account for that.
 
 ### System utilities
 
@@ -35,7 +38,7 @@
 - libcurl and curl-dev installed (used by whoismac and wlancap2wpasec)
 - libpthread and pthread-dev installed (used by hcxhashcattool)
        
-EXAMPLE: to install all software requirements in Debian Linux, Ubuntu Linux, and Kali Linux: 
+EXAMPLE: to install all software requirements in Debian Linux, Ubuntu Linux, or Kali Linux: 
 
 ```sudo apt-get -y install libcurl4-openssl-dev libssl-dev zlib1g-dev libpcap-dev libgmp3-dev```
 
@@ -49,7 +52,7 @@ __TODO: include package list for other Linux distros. LMK if you figure any out!
 
 ## Gotchas
 
-1) You need a networking card that supports monitor mode under Linux, posts have listed the following:
+1) You need a networking card that supports monitor mode under Linux, from online posts I've seen the following NICs listed:
 
 ```
 Supported adapters (strict)
@@ -61,14 +64,14 @@ USB ID 0bda:8187 Realtek Semiconductor Corp. RTL8187 Wireless Adapter
 USB ID 0bda:8189 Realtek Semiconductor Corp. RTL8187B Wireless 802.11g 54Mbps Network Adapter
 ```
 
-For development and testing, I used the [Ralink RT5370](https://www.amazon.com/Ralink-RT5370-Raspberry-adapter-function/dp/B019XUDHFC) USB wireless:
+For development and testing, I used the [Ralink RT5370](https://www.amazon.com/Ralink-RT5370-Raspberry-adapter-function/dp/B019XUDHFC) USB wireless plugged into my Mac Book Air (6,1) laptop. The output from `lusb` is:
 
 ```
 $ lsusb | grep Ralink
 Bus 001 Device 039: ID 148f:5370 Ralink Technology, Corp. RT5370 Wireless Adapter
 ```
 
-2) While the script can use `hashcat-legacy`, that code is over 3 years old, and relies on your CPU to crack passwords. To really get the ball rolling you can should use `hashcat` with the OpenCL headers (we pull those down as part of the build), but that requires a compatible GPU.
+2) The old `hashcat-legacy` uses the CPU to try and crack hashes, but that code is over 3 years old, and is going to be far too slow to crack what we're capturing here. I might provide it as an option, but it's really more of a POC that you could used in canned environments with very simple passwords. To really get the ball rolling you can should use `hashcat` with the OpenCL headers (we pull those down as part of the build), and that requires a system with a compatible GPU.
 
 __TODO: give examples of how this works, with specfic drivers__
 

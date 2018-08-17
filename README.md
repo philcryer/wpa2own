@@ -3,7 +3,7 @@
 
 ## About
 
-The goal of this project is to assist penetration testers in capturing packets from a WPA2 protected wireless network, and crack their PSK (pre-shared key). We know that WPA3 is coming, but most didn't know that WPA2 was as susceptible to being broken as it is.
+The goal of this project is to automate the process of capturing packets on a WPA2 protected wireless network, and crack their PSK (pre-shared keys). We know that WPA3 is coming, but most didn't know that WPA2 was as susceptible to being broken as it is with this recently released [Hashcat](https://hashcat.net) method.
 
 ### History
 

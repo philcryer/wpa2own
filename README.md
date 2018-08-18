@@ -19,7 +19,7 @@ The goal of this project is to automate the process of capturing packets on a WP
 ### Hardware
 
 - a 64 bit Linux system with a network card that supports montior mode - see [Gotchas](#gotchas)
-- a 64 bit Linux system with a GPU (graphics processing unit) for running Hashcat against the pcap - again, see [Gotchas](#gotchas). In this example we're assuming this is a seperate machine, but in the case that you have both on one system, we could rework things to account for that.
+- a 64 bit Linux system with a GPU (graphics processing unit) for running Hashcat against the pcap - again, see [Gotchas](#gotchas). In this example we're assuming this is a separate machine, but in the case that you have both on one system, we could rework things to account for that.
 
 ### System utilities
 
